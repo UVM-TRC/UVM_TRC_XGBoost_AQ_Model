@@ -4,7 +4,8 @@
 # using an XGBoost model prepared by the University of Vermont Transportation Research Center.
 # Users can specify the vehicle class (LDV, MDV, HDV) and pollutant (PM or NOx) in the USER INPUTS section.
 # The script loads the pre-trained model and applies it to new input data to generate predictions.
-# Input data format must match that used in model training and be located in the "UVM Deliverable/data/inputs" folder.
+# Input data format must match that used in model training (see example data set) and be located in the
+# "UVM TRC XGBoost AQ Model/data/inputs" folder.
 
 ## SET UP ###################################################################
 
@@ -22,7 +23,7 @@ VEHICLE_CLASS <- "LDV"
 POLLUTANT <- "PM"
 
 # file directory where "UVM TRC XGBoost AQ Model" folder is located
-DIRECTORY = ".\\UVM TRC XGBoost AQ Model"
+DIRECTORY = "./UVM_TRC_XGBoost_AQ_Model"
 
 # input data file name (csv) located in "UVM TRC XGBoost AQ Model/data/inputs"
 INPUT_FILE <- "input_data_example.csv"
@@ -41,11 +42,19 @@ cat("Start Time:", format(start_time), "\n")
 model_dir <- file.path(DIRECTORY, "models", POLLUTANT)
 model_name <- paste0(tolower(VEHICLE_CLASS), "_model.ubj")
 model_path <- file.path(model_dir, model_name)
-model <- readRDS(model_path)
+model <- xgb.load(model_path)
+
+# resolve the predictor variables the model was trained on.
+# the .ubj files carry no feature names.
+POLLUTANT_FEATURES <- list(
+  PM  = c("ED_PM25_10m", "ED_PM25_250m", "ED_PM25_500m"),
+  NOX = c("ED_3_NOX_10m", "ED_3_NOX_250m", "ED_3_NOX_500m")
+)
+features <- POLLUTANT_FEATURES[[POLLUTANT]]
 
 # print message if model is successfully loaded
 cat("Loaded model for", VEHICLE_CLASS, "and", POLLUTANT, "from", model_path, "\n")
-cat("Expected predictor variables:", paste(model$feature_names, collapse = ", "), "\n")
+cat("Expected predictor variables:", paste(features, collapse = ", "), "\n")
 
 ## load input data ###
 
@@ -58,7 +67,7 @@ cat("Loaded input data from", inputs_path, "\n")
 cat("Input data has", nrow(input), "rows and", ncol(input), "columns.\n")
 
 # check if all required predictor variables are present in input data
-missing_vars <- setdiff(model$feature_names, colnames(input))
+missing_vars <- setdiff(features, colnames(input))
 if (length(missing_vars) > 0) {
   stop("Input data is missing required predictor variables: ", paste(missing_vars, collapse = ", "))
 } else {
@@ -71,7 +80,7 @@ if (length(missing_vars) > 0) {
 data <- input
 
 # run xgboost prediction
-predictions <- predict(model, newdata = as.matrix(data[, model$feature_names, with = FALSE]))
+predictions <- predict(model, newdata = as.matrix(data[, features, with = FALSE]))
 
 # add predictions to data
 data[, paste0("PRED_", POLLUTANT) := predictions]

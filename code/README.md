@@ -50,7 +50,7 @@ VEHICLE_CLASS <- "LDV"
 POLLUTANT <- "PM"
 
 # file directory where "UVM TRC XGBoost AQ Model" folder is located
-DIRECTORY = "C:\\path\\to\\UVM TRC XGBoost AQ Model"
+DIRECTORY = "C:/path/to/UVM TRC XGBoost AQ Model"
 
 # input data file name (csv) located in "UVM TRC XGBoost AQ Model/data/inputs"
 INPUT_FILE <- "input_data_example.csv"
